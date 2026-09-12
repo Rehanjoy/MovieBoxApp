@@ -35,7 +35,7 @@ jobs:
         run: |
           if [ ! -f "android/gradlew" ]; then
             echo "Scaffolding native Android project files..."
-            npx --yes @react-native-community/cli@11 init TempApp --version 0.72.6 --skip-install --pm npm
+            npx --yes @react-native-community/cli@11 init TempApp --version 0.72.6 --skip-install --npm
             cp -r TempApp/android ./android
             rm -rf TempApp
           fi
