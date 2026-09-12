@@ -1,0 +1,62 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Standalone MovieBox APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Prepare Android Project
+        run: |
+          if [ ! -d "android" ]; then
+            echo "Android directory not found. Initializing native Android scaffold..."
+            npx react-native@0.72.6 init TempApp --version 0.72.6 --skip-install
+            cp -r TempApp/android ./android
+            rm -rf TempApp
+          fi
+          chmod +x android/gradlew
+
+      - name: Build Android APK (Debug / Release)
+        run: |
+          cd android
+          # Build universal APK compatible with all Android devices & TVs
+          ./gradlew assembleDebug --no-daemon --stacktrace || ./gradlew assembleRelease --no-daemon
+
+      - name: Locate & Rename APK
+        run: |
+          mkdir -p apk-output
+          find android/app/build/outputs/apk/ -name "*.apk" -exec cp {} apk-output/MovieBox-Android-v3.0.apk \;
+          echo "Found APK:"
+          ls -la apk-output/
+
+      - name: Upload MovieBox APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MovieBox-Android-APK
+          path: apk-output/MovieBox-Android-v3.0.apk
+          retention-days: 30
